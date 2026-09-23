@@ -5,7 +5,6 @@ for sdk_target in MMSPlugin.sdk_targets:
     binary = MMSPlugin.HL2Library(builder, sdk_target.cxx, project, sdk_target.sdk)
     binary.sources += [
         "src/autorestart.cpp",
-        "src/discord.cpp",
     ]
 
 MMSPlugin.tasks += builder.Add(project)

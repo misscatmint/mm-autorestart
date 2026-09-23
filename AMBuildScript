@@ -78,7 +78,7 @@ class MMSPluginConfig(object):
     def configureCXX(self, cxx):
         if cxx.behavior != "gcc" or cxx.target.platform != "linux":
             raise Exception(
-                "Only Linux GCC/Clang builds are supported (csgodocker is Linux-only)."
+                "Only Linux GCC/Clang builds are supported"
             )
 
         cxx.defines += [
@@ -92,6 +92,7 @@ class MMSPluginConfig(object):
             "_LINUX",
             "POSIX",
             "_FILE_OFFSET_BITS=64",
+            "PIC",
         ]
         cxx.cflags += [
             "-pipe",
@@ -117,6 +118,7 @@ class MMSPluginConfig(object):
             "-Wno-overloaded-virtual",
             "-Wno-register",
             "-Wno-delete-non-virtual-dtor",
+            "-fPIC",
         ]
         if cxx.family == "gcc":
             cxx.cflags += ["-mfpmath=sse"]
@@ -134,7 +136,7 @@ class MMSPluginConfig(object):
 
         # Metamod dlcloses plugins during shutdown.
         # The quit watchdog thread must outlive that, so the .so is never unmapped.
-        cxx.linkflags += ["-pthread", "-ldl", "-Wl,-z,nodelete"]
+        cxx.linkflags += ["-pthread", "-ldl", "-Wl,-z,nodelete", "-Wl,-z,notext"]
 
         if builder.options.opt == "1":
             cxx.defines += ["NDEBUG"]
@@ -163,10 +165,6 @@ class MMSPluginConfig(object):
             cxx.defines += ["SE_{}={}".format(other_sdk["define"], other_sdk["code"])]
 
         SdkHelpers.configureCxx(context, binary, sdk)
-
-        # Steam symbols (ISteamHTTP) for the Discord webhook;
-        # resolved at runtime from the server's own libsteam_api.
-        cxx.postlink += [os.path.join(sdk["path"], "lib", "linux", "libsteam_api.so")]
 
         return binary
 
