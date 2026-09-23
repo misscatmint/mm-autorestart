@@ -150,7 +150,9 @@ void AutoRestartPlugin::UpdateRestartTime()
 	const char *dailyStr = autorestart_time.GetString();
 	if (!dailyStr || !*dailyStr)
 	{
+		m_dailyRestartSeconds = 0;
 		m_hasDailyRestart = false;
+		m_lastDailyRestartDay = -1;
 		return;
 	}
 
@@ -170,7 +172,9 @@ void AutoRestartPlugin::UpdateRestartTime()
 	}
 	else
 	{
+		m_dailyRestartSeconds = 0;
 		m_hasDailyRestart = false;
+		m_lastDailyRestartDay = -1;
 	}
 }
 

@@ -69,7 +69,7 @@ public: // ISmmPlugin metadata
 
 	const char *GetVersion() override
 	{
-		return "3.0.0";
+		return "3.0.1";
 	}
 
 	const char *GetDate() override
@@ -108,7 +108,6 @@ private:
 	bool m_hasDailyRestart = false;
 	int m_dailyRestartSeconds = 0;               // seconds since UTC midnight
 	std::atomic<int> m_lastDailyRestartDay {-1}; // days since unix epoch (UTC) of last daily restart
-	std::string m_lastParsedDailyStr;            // cached string to handle live convar changes
 
 	double m_lastCheckTime = 0.0; // Plat_FloatTime() of last 10s tick
 	std::atomic<bool> m_quitPending {false};
