@@ -159,9 +159,10 @@ void AutoRestartPlugin::UpdateRestartTime()
 	}
 
 	std::string trimmed = Trim(dailyStr);
-	int hh = 0, mm = 0, ss = 0;
-	int n = std::sscanf(trimmed.c_str(), "%d:%d:%d", &hh, &mm, &ss);
-	if (n >= 2 && hh >= 0 && hh < 24 && mm >= 0 && mm < 60 && ss >= 0 && ss < 60)
+	const char *str = trimmed.c_str();
+	int hh = 0, mm = 0, ss = 0, end = 0;
+	bool parsed = std::sscanf(str, "%2d:%2d:%2d%n", &hh, &mm, &ss, &end) == 3 || std::sscanf(str, "%2d:%2d%n", &hh, &mm, &end) == 2;
+	if (parsed && str[end] == '\0' && hh >= 0 && hh < 24 && mm >= 0 && mm < 60 && ss >= 0 && ss < 60)
 	{
 		m_dailyRestartSeconds = hh * 3600 + mm * 60 + ss;
 		m_hasDailyRestart = true;
@@ -174,6 +175,7 @@ void AutoRestartPlugin::UpdateRestartTime()
 	}
 	else
 	{
+		Warning("[autorestart] invalid autorestart_time \"%s\", expected HH:mm or HH:mm:ss\n", str);
 		m_dailyRestartSeconds = 0;
 		m_hasDailyRestart = false;
 		m_lastDailyRestartDay = -1;
