@@ -1,7 +1,6 @@
 #include "autorestart.h"
 
 #include <convar.h>
-#include <inetchannelinfo.h>
 #include "tier0/dbg.h"
 #include "tier0/platform.h"
 
@@ -9,12 +8,9 @@
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
-#include <fstream>
-#include <sstream>
+#include <ctime>
+#include <string>
 
-#include <dirent.h>
-#include <sys/stat.h>
 #include <unistd.h>
 
 AutoRestartPlugin g_AutoRestartPlugin;

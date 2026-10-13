@@ -11,10 +11,7 @@
 
 #include <atomic>
 #include <condition_variable>
-#include <ctime>
-#include <map>
 #include <mutex>
-#include <string>
 #include <thread>
 
 // MM:S 2.0 (plugin API 18) replaced SourceHook with KHook; 1.12 is API 16.
@@ -89,13 +86,9 @@ private:
 	void OnClientDisconnect(edict_t *pEntity);
 
 	void CheckAndRestart();
-	bool IsServerOutOfDate();
 	bool CheckDailyRestart() const;
 	int CountHumanPlayers() const;
-	void PrintToChatAll(const char *msg);
 	void QuitNow();
-
-	std::map<std::string, std::string> ReadPluginVersions() const;
 
 	// While the server hibernates GameFrame is frozen, so the normal restart path can't run.
 	// This thread polls for a pending/due restart and, while hibernating,
