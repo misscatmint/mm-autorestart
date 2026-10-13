@@ -104,6 +104,7 @@ private:
 
 	double m_lastCheckTime = 0.0; // Plat_FloatTime() of last 10s tick
 	std::atomic<bool> m_quitPending {false};
+	bool m_quitIssued = false; // ServerCommand only queues "quit", so frames keep running until it executes
 	double m_quitAtTime = 0.0; // Plat_FloatTime() at which to issue the deferred quit
 
 	// Background watcher state. m_hibernating is the engine's hibernation signal (set from Hook_ServerHibernationUpdate);

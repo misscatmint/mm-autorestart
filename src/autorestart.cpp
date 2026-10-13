@@ -207,6 +207,7 @@ void AutoRestartPlugin::QuitNow()
 	Msg("[autorestart] restarting server\n");
 	ArmQuitWatchdog();
 	engine->ServerCommand("quit\n");
+	m_quitIssued = true;
 }
 
 void AutoRestartPlugin::CheckAndRestart()
@@ -248,6 +249,11 @@ void AutoRestartPlugin::CheckAndRestart()
 
 void AutoRestartPlugin::OnGameFrame()
 {
+	if (m_quitIssued)
+	{
+		return;
+	}
+
 	double now = Plat_FloatTime();
 
 	if (m_quitPending && now >= m_quitAtTime)
