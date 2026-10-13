@@ -12,7 +12,7 @@ Every 10 seconds the plugin checks whether a restart is warranted:
 
 When a restart is warranted:
 
-- If there are **no players**, it runs `quit`.
+- If there are **no players**, it runs `quit` after 30 seconds.
 - If a player disconnects after the daily restart is triggered, they have 30
   seconds to rejoin before the restart goes through.
 - While the server **hibernates** (`sv_hibernate_when_empty`), `GameFrame`
@@ -24,9 +24,9 @@ When a restart is warranted:
 
 Server convars:
 
-| Env var              | Required | Description                                                        |
-| -------------------- | -------- | ------------------------------------------------------------------ |
-| `autorestart_time` | no       | UTC time `HH:mm` (or `HH:mm:ss`) for a daily restart.              |
+| Cvar               | Required | Description                                           |
+| ------------------ | -------- | ----------------------------------------------------- |
+| `autorestart_time` | no       | UTC time `HH:mm` (or `HH:mm:ss`) for a daily restart. |
 
 ## Building
 
