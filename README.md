@@ -18,6 +18,8 @@ When a restart is warranted:
 - While the server **hibernates** (`sv_hibernate_when_empty`), `GameFrame`
   stops running, so a background thread polls every 30 seconds and sends the
   process `SIGTERM` if a restart is pending or due.
+- If the plugin is loaded while the server is already hibernating, it can't
+  tell, so a restart that comes due waits until the server next wakes up.
 - If shutdown hangs for 60 seconds, the process is force-exited.
 
 ## Configuration
