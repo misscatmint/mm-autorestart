@@ -99,8 +99,6 @@ class MMSPluginConfig(object):
             "-fno-strict-aliasing",
             "-Wall",
             "-Wno-sign-compare",
-            "-Wno-uninitialized",
-            "-Wno-unused",
             "-Wno-switch",
             "-Wno-unknown-pragmas",
             "-Wno-dangling-else",
@@ -131,6 +129,7 @@ class MMSPluginConfig(object):
                 "-Wno-deprecated-register",
                 "-Wno-implicit-int-float-conversion",
                 "-Wno-tautological-overlap-compare",
+                "-Wno-unused-private-field",
             ]
             cxx.linkflags += ["-lgcc_eh"]
 
