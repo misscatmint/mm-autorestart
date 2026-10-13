@@ -199,7 +199,7 @@ bool AutoRestartPlugin::CheckDailyRestart() const
 
 int AutoRestartPlugin::CountHumanPlayers() const
 {
-	// Bots have no net channel, so only real (incl. still-connecting) clients count.
+	// Bots have no net channel (unless sv_stressbots gives them one), so only real (incl. still-connecting) clients count.
 	int count = 0;
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
