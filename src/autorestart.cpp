@@ -37,7 +37,7 @@ static const int kWatcherIntervalSeconds = 30;    // background poll cadence whi
 static const int kQuitTimeoutSeconds = 60;
 
 // Engine shutdown can wedge after plugins unload (another plugin's thread, Steam, etc.),
-// leaving a dead server. Force exit 0 so its loop restarts us.
+// leaving a dead server. Force an exit so the container's restart policy relaunches us.
 // The thread only touches its own stack, and the .so is linked nodelete, so plugin unload is safe.
 static void ArmQuitWatchdog()
 {
