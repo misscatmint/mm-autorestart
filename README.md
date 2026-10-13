@@ -38,8 +38,11 @@ the hook API. Linux x86 only.
 
 ```sh
 git submodule update --init --recursive
-docker compose up --build
+make
 ```
+
+`make dist` also zips each package into `dist/`, `make lint` runs
+clang-tidy, and `make check` does both lint and build.
 
 Result:
 
