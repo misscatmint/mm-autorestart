@@ -149,6 +149,11 @@ bool AutoRestartPlugin::Unload(char *error, size_t maxlen)
 
 void AutoRestartPlugin::UpdateRestartTime()
 {
+	// A new value replaces the old schedule, including a restart that's already waiting.
+	m_scheduledRestartNeeded = false;
+	m_restartNeeded = false;
+	m_quitPending = false;
+
 	const char *dailyStr = autorestart_time.GetString();
 	if (!dailyStr || !*dailyStr)
 	{

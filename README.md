@@ -24,9 +24,9 @@ When a restart is warranted:
 
 Server convars:
 
-| Cvar               | Required | Description                                           |
-| ------------------ | -------- | ----------------------------------------------------- |
-| `autorestart_time` | no       | UTC time `HH:mm` (or `HH:mm:ss`) for a daily restart. |
+| Cvar               | Required | Description                                                                                  |
+| ------------------ | -------- | -------------------------------------------------------------------------------------------- |
+| `autorestart_time` | no       | UTC time `HH:mm` (or `HH:mm:ss`) for a daily restart. Changing it cancels a pending restart. |
 
 ## Building
 
