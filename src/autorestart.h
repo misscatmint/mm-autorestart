@@ -98,14 +98,15 @@ private:
 	bool m_restartNeeded = false;
 	std::atomic<bool> m_scheduledRestartNeeded {false};
 
-	bool m_hasDailyRestart = false;
-	int m_dailyRestartSeconds = 0;               // seconds since UTC midnight
+	std::atomic<bool> m_hasDailyRestart {false};
+	std::atomic<int> m_dailyRestartSeconds {0};  // seconds since UTC midnight
 	std::atomic<int> m_lastDailyRestartDay {-1}; // days since unix epoch (UTC) of last daily restart
 
 	double m_lastCheckTime = 0.0; // Plat_FloatTime() of last 10s tick
 	std::atomic<bool> m_quitPending {false};
 	bool m_quitIssued = false; // ServerCommand only queues "quit", so frames keep running until it executes
-	double m_quitAtTime = 0.0; // Plat_FloatTime() at which to issue the deferred quit
+	// Whole Plat_FloatTime() seconds at which to issue the deferred quit; atomic<double> needs libatomic on x86, which srcds lacks.
+	std::atomic<int> m_quitAtTime {0};
 
 	// Background watcher state. m_hibernating is the engine's hibernation signal (set from Hook_ServerHibernationUpdate);
 	// the thread only acts while it's true.

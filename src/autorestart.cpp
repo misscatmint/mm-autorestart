@@ -239,7 +239,7 @@ void AutoRestartPlugin::CheckAndRestart()
 	{
 		if (!m_quitPending)
 		{
-			m_quitAtTime = Plat_FloatTime() + 30.0;
+			m_quitAtTime = static_cast<int>(Plat_FloatTime()) + 30;
 			m_quitPending = true;
 			Msg("[autorestart] server empty, restarting in 30 seconds\n");
 		}
@@ -307,7 +307,7 @@ void AutoRestartPlugin::OnClientDisconnect(edict_t *pEntity)
 
 	if (!m_quitPending)
 	{
-		m_quitAtTime = Plat_FloatTime() + 30.0;
+		m_quitAtTime = static_cast<int>(Plat_FloatTime()) + 30;
 		m_quitPending = true;
 		Msg("[autorestart] last player left, restarting if they don't rejoin in 30 seconds\n");
 	}
