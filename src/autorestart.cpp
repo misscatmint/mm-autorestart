@@ -150,41 +150,36 @@ bool AutoRestartPlugin::Unload(char *error, size_t maxlen)
 void AutoRestartPlugin::UpdateRestartTime()
 {
 	// A new value replaces the old schedule, including a restart that's already waiting.
+	m_hasDailyRestart = false;
+	m_dailyRestartSeconds = 0;
+	m_lastDailyRestartDay = -1;
 	m_scheduledRestartNeeded = false;
 	m_restartNeeded = false;
 	m_quitPending = false;
 
-	const char *dailyStr = autorestart_time.GetString();
-	if (!dailyStr || !*dailyStr)
+	std::string value = Trim(autorestart_time.GetString());
+	if (value.empty())
 	{
-		m_dailyRestartSeconds = 0;
-		m_hasDailyRestart = false;
-		m_lastDailyRestartDay = -1;
 		return;
 	}
 
-	std::string trimmed = Trim(dailyStr);
-	const char *str = trimmed.c_str();
+	const char *str = value.c_str();
 	int hh = 0, mm = 0, ss = 0, end = 0;
 	bool parsed = std::sscanf(str, "%2d:%2d:%2d%n", &hh, &mm, &ss, &end) == 3 || std::sscanf(str, "%2d:%2d%n", &hh, &mm, &end) == 2;
-	if (parsed && str[end] == '\0' && hh >= 0 && hh < 24 && mm >= 0 && mm < 60 && ss >= 0 && ss < 60)
-	{
-		m_dailyRestartSeconds = hh * 3600 + mm * 60 + ss;
-		m_hasDailyRestart = true;
-
-		time_t now = time(nullptr);
-		int today = static_cast<int>(now / 86400);
-		int secOfDay = static_cast<int>(now % 86400);
-		m_lastDailyRestartDay = (secOfDay >= m_dailyRestartSeconds) ? today : today - 1;
-		Msg("[autorestart] daily restart time set to %s\n", trimmed.c_str());
-	}
-	else
+	if (!parsed || str[end] != '\0' || hh < 0 || hh > 23 || mm < 0 || mm > 59 || ss < 0 || ss > 59)
 	{
 		Warning("[autorestart] invalid autorestart_time \"%s\", expected HH:mm or HH:mm:ss\n", str);
-		m_dailyRestartSeconds = 0;
-		m_hasDailyRestart = false;
-		m_lastDailyRestartDay = -1;
+		return;
 	}
+
+	int restartSeconds = hh * 3600 + mm * 60 + ss;
+	time_t now = time(nullptr);
+	int today = static_cast<int>(now / 86400);
+	int secOfDay = static_cast<int>(now % 86400);
+	m_lastDailyRestartDay = (secOfDay >= restartSeconds) ? today : today - 1;
+	m_dailyRestartSeconds = restartSeconds;
+	m_hasDailyRestart = true;
+	Msg("[autorestart] daily restart time set to %s\n", str);
 }
 
 bool AutoRestartPlugin::CheckDailyRestart() const
