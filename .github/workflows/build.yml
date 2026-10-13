@@ -13,7 +13,7 @@ jobs:
 
       # Builds output/mm-1.12 (SourceHook) and output/mm-2.0 (KHook)
       - name: Build inside container
-        run: docker compose run --rm build
+        run: make build
 
       - name: Upload MM:S 1.12 artifact
         uses: actions/upload-artifact@v7
