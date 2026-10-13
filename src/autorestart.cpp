@@ -99,6 +99,10 @@ bool AutoRestartPlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t max
 
 	META_REGCVAR(&autorestart_time);
 
+	// The .so is nodelete, so a reload reuses this object with whatever the last load left behind.
+	m_hibernating = false;
+	m_stopWatcher = false;
+	m_lastCheckTime = 0.0;
 	UpdateRestartTime();
 
 #ifdef AUTORESTART_KHOOK
@@ -110,9 +114,6 @@ bool AutoRestartPlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t max
 	SH_ADD_HOOK(IServerGameClients, ClientDisconnect, gameclients, SH_MEMBER(this, &AutoRestartPlugin::Hook_ClientDisconnect), true);
 	SH_ADD_HOOK(IServerGameDLL, ServerHibernationUpdate, server, SH_MEMBER(this, &AutoRestartPlugin::Hook_ServerHibernationUpdate), true);
 #endif
-
-	// 0.0 forces a check on the first frame
-	m_lastCheckTime = 0.0;
 
 	// Watch for updates while the server hibernates, where GameFrame is frozen.
 	m_watcherThread = std::thread(&AutoRestartPlugin::WatcherLoop, this);
