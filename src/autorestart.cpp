@@ -291,7 +291,7 @@ void AutoRestartPlugin::OnGameFrame()
 
 void AutoRestartPlugin::OnClientDisconnect(edict_t *pEntity)
 {
-	if (!(m_restartNeeded || m_scheduledRestartNeeded))
+	if (!m_scheduledRestartNeeded)
 	{
 		return;
 	}
