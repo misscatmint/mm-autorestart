@@ -8,6 +8,7 @@
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <ctime>
 #include <string>
 
@@ -70,6 +71,11 @@ static std::string Trim(const std::string &s)
 
 static void OnAutoRestartTimeChanged(IConVar *var, const char *pOldValue, float flOldValue)
 {
+	// tier1 runs change callbacks on every set, and server.cfg sets this again on each map load.
+	if (std::strcmp(pOldValue, autorestart_time.GetString()) == 0)
+	{
+		return;
+	}
 	g_AutoRestartPlugin.UpdateRestartTime();
 }
 
