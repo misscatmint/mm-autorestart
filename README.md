@@ -1,20 +1,22 @@
 # mm-autorestart
 
 A **Metamod:Source plugin** (CS:GO, MM:S 1.12 and 2.0) that auto-restarts
-a server at a configured daily time.
+a server once it has been up for a set time and is empty.
 
 ## Behaviour
 
 Every 10 seconds the plugin checks whether a restart is warranted:
 
-- **Daily restart** - the current UTC time has passed `autorestart_time`
-  (once per day).
+- **Uptime restart** - the plugin has been loaded for `autorestart_uptime`
+  minutes. Uptime counts from when the plugin loads, which is when the
+  server starts, or a `meta load` or `meta reload` of this plugin. Map
+  changes and `meta refresh` don't reset it.
 
 When a restart is warranted:
 
 - If there are **no players**, it runs `quit` after `autorestart_grace`
   seconds.
-- If a player disconnects after the daily restart is triggered, they have
+- If a player disconnects after the restart comes due, they have
   `autorestart_grace` seconds to rejoin before the restart goes through.
 - While the server **hibernates** (`sv_hibernate_when_empty`), `GameFrame`
   stops running, so a background thread polls every 30 seconds and sends the
@@ -28,10 +30,10 @@ When a restart is warranted:
 
 Server convars:
 
-| Cvar                | Required | Description                                                                                                                                             |
-| ------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `autorestart_time`  | no       | UTC time `HH:mm` (or `HH:mm:ss`) for a daily restart. Changing it cancels a pending restart.                                                            |
-| `autorestart_grace` | no       | Seconds (0 to 86400, default 30) an empty server waits before a due restart, so players can rejoin. A restart already counting down keeps its deadline. |
+| Cvar                 | Required | Description                                                                                                                                                                 |
+| -------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `autorestart_uptime` | no       | Minutes of uptime (0 to 525600, default 0 = off) after which a restart comes due. Changing it cancels a pending restart, which comes due again if the new limit is reached. |
+| `autorestart_grace`  | no       | Seconds (0 to 86400, default 30) an empty server waits before a due restart, so players can rejoin. A restart already counting down keeps its deadline.                     |
 
 ## Building
 

@@ -1,7 +1,7 @@
 /**
  * AutoRestart - Metamod:Source plugin (CS:GO, MM:S 1.12 and 2.0)
  *
- * Restarts the server daily
+ * Restarts the server once it has been up for a set time and is empty
  */
 
 #pragma once
@@ -10,6 +10,7 @@
 #include <eiface.h>
 
 #include <atomic>
+#include <chrono>
 #include <condition_variable>
 #include <mutex>
 #include <thread>
@@ -51,7 +52,7 @@ public: // ISmmPlugin metadata
 
 	const char *GetDescription() override
 	{
-		return "Auto-restart the server daily";
+		return "Auto-restart the server after a set uptime";
 	}
 
 	const char *GetURL() override
@@ -66,7 +67,7 @@ public: // ISmmPlugin metadata
 
 	const char *GetVersion() override
 	{
-		return "3.0.2";
+		return "4.0.0";
 	}
 
 	const char *GetDate() override
@@ -79,14 +80,14 @@ public: // ISmmPlugin metadata
 		return "autorestart";
 	}
 
-	void UpdateRestartTime();
+	void UpdateUptimeLimit();
 private:
 	// Engine-agnostic hook bodies, called from the KHook/SourceHook wrappers.
 	void OnGameFrame();
 	void OnClientDisconnect(edict_t *pEntity);
 
 	void CheckAndRestart();
-	bool CheckDailyRestart() const;
+	bool CheckUptimeRestart() const;
 	int CountHumanPlayers() const;
 	void QuitNow();
 
@@ -98,9 +99,8 @@ private:
 	bool m_restartNeeded = false;
 	std::atomic<bool> m_scheduledRestartNeeded {false};
 
-	std::atomic<bool> m_hasDailyRestart {false};
-	std::atomic<int> m_dailyRestartSeconds {0};  // seconds since UTC midnight
-	std::atomic<int> m_lastDailyRestartDay {-1}; // days since unix epoch (UTC) of last daily restart
+	std::chrono::steady_clock::time_point m_loadTime; // set in Load before the watcher thread starts
+	std::atomic<int> m_uptimeLimitSeconds {0};        // 0 = no uptime restart
 
 	double m_lastCheckTime = 0.0; // Plat_FloatTime() of last 10s tick
 	std::atomic<bool> m_quitPending {false};

@@ -8,9 +8,6 @@
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
-#include <ctime>
-#include <string>
 
 #include <unistd.h>
 
@@ -21,9 +18,9 @@ IServerGameDLL *server = nullptr;
 IServerGameClients *gameclients = nullptr;
 CGlobalVars *gpGlobals = nullptr;
 
-static void OnAutoRestartTimeChanged(IConVar *var, const char *pOldValue, float flOldValue);
+static void OnAutoRestartUptimeChanged(IConVar *var, const char *pOldValue, float flOldValue);
 
-ConVar autorestart_time("autorestart_time", "", FCVAR_NONE, "daily restart time in UTC (HH:mm or HH:mm:ss)", OnAutoRestartTimeChanged);
+ConVar autorestart_uptime("autorestart_uptime", "0", FCVAR_NONE, "minutes of uptime after which the server restarts once empty (0 = off)", true, 0.0f, true, 525600.0f, OnAutoRestartUptimeChanged);
 ConVar autorestart_grace("autorestart_grace", "30", FCVAR_NONE, "seconds a due restart waits on an empty server for players to rejoin", true, 0.0f, true, 86400.0f);
 
 PLUGIN_EXPOSE(AutoRestartPlugin, g_AutoRestartPlugin);
@@ -59,25 +56,14 @@ static void ArmQuitWatchdog()
 		.detach();
 }
 
-static std::string Trim(const std::string &s)
-{
-	size_t a = s.find_first_not_of(" \t\r\n");
-	if (a == std::string::npos)
-	{
-		return "";
-	}
-	size_t b = s.find_last_not_of(" \t\r\n");
-	return s.substr(a, b - a + 1);
-}
-
-static void OnAutoRestartTimeChanged(IConVar *var, const char *pOldValue, float flOldValue)
+static void OnAutoRestartUptimeChanged(IConVar *var, const char *pOldValue, float flOldValue)
 {
 	// tier1 runs change callbacks on every set, and server.cfg sets this again on each map load.
-	if (std::strcmp(pOldValue, autorestart_time.GetString()) == 0)
+	if (static_cast<int>(flOldValue) == autorestart_uptime.GetInt())
 	{
 		return;
 	}
-	g_AutoRestartPlugin.UpdateRestartTime();
+	g_AutoRestartPlugin.UpdateUptimeLimit();
 }
 
 AutoRestartPlugin::AutoRestartPlugin()
@@ -98,14 +84,15 @@ bool AutoRestartPlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t max
 	GET_V_IFACE_ANY(GetServerFactory, gameclients, IServerGameClients, INTERFACEVERSION_SERVERGAMECLIENTS);
 	gpGlobals = ismm->GetCGlobals();
 
-	META_REGCVAR(&autorestart_time);
+	META_REGCVAR(&autorestart_uptime);
 	META_REGCVAR(&autorestart_grace);
 
 	// The .so is nodelete, so a reload reuses this object with whatever the last load left behind.
 	m_hibernating = false;
 	m_stopWatcher = false;
 	m_lastCheckTime = 0.0;
-	UpdateRestartTime();
+	m_loadTime = std::chrono::steady_clock::now();
+	UpdateUptimeLimit();
 
 #ifdef AUTORESTART_KHOOK
 	m_GameFrame.Add(server);
@@ -150,53 +137,29 @@ bool AutoRestartPlugin::Unload(char *error, size_t maxlen)
 	return true;
 }
 
-void AutoRestartPlugin::UpdateRestartTime()
+void AutoRestartPlugin::UpdateUptimeLimit()
 {
-	// A new value replaces the old schedule, including a restart that's already waiting.
-	m_hasDailyRestart = false;
-	m_dailyRestartSeconds = 0;
-	m_lastDailyRestartDay = -1;
+	// A new limit cancels a restart that's already waiting; the next check makes it due again if the limit is still reached.
 	m_scheduledRestartNeeded = false;
 	m_restartNeeded = false;
 	m_quitPending = false;
 
-	std::string value = Trim(autorestart_time.GetString());
-	if (value.empty())
+	int minutes = autorestart_uptime.GetInt();
+	m_uptimeLimitSeconds = minutes * 60;
+	if (minutes > 0)
 	{
-		return;
+		Msg("[autorestart] restarting after %d minutes of uptime\n", minutes);
 	}
-
-	const char *str = value.c_str();
-	int hh = 0, mm = 0, ss = 0, end = 0;
-	bool parsed = std::sscanf(str, "%2d:%2d:%2d%n", &hh, &mm, &ss, &end) == 3 || std::sscanf(str, "%2d:%2d%n", &hh, &mm, &end) == 2;
-	if (!parsed || str[end] != '\0' || hh < 0 || hh > 23 || mm < 0 || mm > 59 || ss < 0 || ss > 59)
-	{
-		Warning("[autorestart] invalid autorestart_time \"%s\", expected HH:mm or HH:mm:ss\n", str);
-		return;
-	}
-
-	int restartSeconds = hh * 3600 + mm * 60 + ss;
-	time_t now = time(nullptr);
-	int today = static_cast<int>(now / 86400);
-	int secOfDay = static_cast<int>(now % 86400);
-	m_lastDailyRestartDay = (secOfDay >= restartSeconds) ? today : today - 1;
-	m_dailyRestartSeconds = restartSeconds;
-	m_hasDailyRestart = true;
-	Msg("[autorestart] daily restart time set to %s\n", str);
 }
 
-bool AutoRestartPlugin::CheckDailyRestart() const
+bool AutoRestartPlugin::CheckUptimeRestart() const
 {
-	if (!m_hasDailyRestart || m_scheduledRestartNeeded)
+	int limit = m_uptimeLimitSeconds;
+	if (limit <= 0 || m_scheduledRestartNeeded)
 	{
 		return false;
 	}
-
-	time_t now = time(nullptr);
-	int today = static_cast<int>(now / 86400);    // days since epoch (UTC)
-	int secOfDay = static_cast<int>(now % 86400); // seconds since UTC midnight
-	
-	return today > m_lastDailyRestartDay && secOfDay >= m_dailyRestartSeconds;
+	return std::chrono::steady_clock::now() - m_loadTime >= std::chrono::seconds(limit);
 }
 
 int AutoRestartPlugin::CountHumanPlayers() const
@@ -223,17 +186,14 @@ void AutoRestartPlugin::QuitNow()
 
 void AutoRestartPlugin::CheckAndRestart()
 {
-	bool isDailyRestartDue = CheckDailyRestart();
-
-	if (!(isDailyRestartDue || m_scheduledRestartNeeded))
-	{
-		return;
-	}
-
-	if (isDailyRestartDue && !m_scheduledRestartNeeded)
+	if (CheckUptimeRestart())
 	{
 		m_scheduledRestartNeeded = true;
-		m_lastDailyRestartDay = static_cast<int>(time(nullptr) / 86400);
+	}
+
+	if (!m_scheduledRestartNeeded)
+	{
+		return;
 	}
 
 	int numPlayers = CountHumanPlayers();
@@ -369,7 +329,7 @@ void AutoRestartPlugin::WatcherLoop()
 		}
 
 		// A hibernating server is empty, so any pending or due restart can happen right away.
-		if (m_hibernating && (m_quitPending || m_scheduledRestartNeeded || CheckDailyRestart()))
+		if (m_hibernating && (m_quitPending || m_scheduledRestartNeeded || CheckUptimeRestart()))
 		{
 			double now = Plat_FloatTime();
 			if (now >= m_quitAtTime)
