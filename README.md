@@ -12,12 +12,14 @@ Every 10 seconds the plugin checks whether a restart is warranted:
 
 When a restart is warranted:
 
-- If there are **no players**, it runs `quit` after 30 seconds.
-- If a player disconnects after the daily restart is triggered, they have 30
-  seconds to rejoin before the restart goes through.
+- If there are **no players**, it runs `quit` after `autorestart_grace`
+  seconds.
+- If a player disconnects after the daily restart is triggered, they have
+  `autorestart_grace` seconds to rejoin before the restart goes through.
 - While the server **hibernates** (`sv_hibernate_when_empty`), `GameFrame`
   stops running, so a background thread polls every 30 seconds and sends the
-  process `SIGTERM` if a restart is pending or due.
+  process `SIGTERM` if a restart is pending or due, once `autorestart_grace`
+  seconds have passed since the last player left.
 - If the plugin is loaded while the server is already hibernating, it can't
   tell, so a restart that comes due waits until the server next wakes up.
 - If shutdown hangs for 60 seconds, the process is force-exited.
@@ -26,9 +28,10 @@ When a restart is warranted:
 
 Server convars:
 
-| Cvar               | Required | Description                                                                                  |
-| ------------------ | -------- | -------------------------------------------------------------------------------------------- |
-| `autorestart_time` | no       | UTC time `HH:mm` (or `HH:mm:ss`) for a daily restart. Changing it cancels a pending restart. |
+| Cvar                | Required | Description                                                                                                                                             |
+| ------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `autorestart_time`  | no       | UTC time `HH:mm` (or `HH:mm:ss`) for a daily restart. Changing it cancels a pending restart.                                                            |
+| `autorestart_grace` | no       | Seconds (0 to 86400, default 30) an empty server waits before a due restart, so players can rejoin. A restart already counting down keeps its deadline. |
 
 ## Building
 

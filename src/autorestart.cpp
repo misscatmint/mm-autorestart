@@ -24,6 +24,7 @@ CGlobalVars *gpGlobals = nullptr;
 static void OnAutoRestartTimeChanged(IConVar *var, const char *pOldValue, float flOldValue);
 
 ConVar autorestart_time("autorestart_time", "", FCVAR_NONE, "daily restart time in UTC (HH:mm or HH:mm:ss)", OnAutoRestartTimeChanged);
+ConVar autorestart_grace("autorestart_grace", "30", FCVAR_NONE, "seconds a due restart waits on an empty server for players to rejoin", true, 0.0f, true, 86400.0f);
 
 PLUGIN_EXPOSE(AutoRestartPlugin, g_AutoRestartPlugin);
 
@@ -98,6 +99,7 @@ bool AutoRestartPlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t max
 	gpGlobals = ismm->GetCGlobals();
 
 	META_REGCVAR(&autorestart_time);
+	META_REGCVAR(&autorestart_grace);
 
 	// The .so is nodelete, so a reload reuses this object with whatever the last load left behind.
 	m_hibernating = false;
@@ -239,9 +241,10 @@ void AutoRestartPlugin::CheckAndRestart()
 	{
 		if (!m_quitPending)
 		{
-			m_quitAtTime = static_cast<int>(Plat_FloatTime()) + 30;
+			int grace = autorestart_grace.GetInt();
+			m_quitAtTime = static_cast<int>(Plat_FloatTime()) + grace;
 			m_quitPending = true;
-			Msg("[autorestart] server empty, restarting in 30 seconds\n");
+			Msg("[autorestart] server empty, restarting in %d seconds\n", grace);
 		}
 	}
 	else
@@ -291,11 +294,6 @@ void AutoRestartPlugin::OnGameFrame()
 
 void AutoRestartPlugin::OnClientDisconnect(edict_t *pEntity)
 {
-	if (!m_scheduledRestartNeeded)
-	{
-		return;
-	}
-
 	int leaving = pEntity ? static_cast<int>(pEntity - gpGlobals->pEdicts) : -1;
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
@@ -305,11 +303,17 @@ void AutoRestartPlugin::OnClientDisconnect(edict_t *pEntity)
 		}
 	}
 
-	if (!m_quitPending)
+	if (m_quitPending)
 	{
-		m_quitAtTime = static_cast<int>(Plat_FloatTime()) + 30;
+		return;
+	}
+	// Set even before a restart is due: if the server hibernates first, the watcher only has this deadline to go by.
+	int grace = autorestart_grace.GetInt();
+	m_quitAtTime = static_cast<int>(Plat_FloatTime()) + grace;
+	if (m_scheduledRestartNeeded)
+	{
 		m_quitPending = true;
-		Msg("[autorestart] last player left, restarting if they don't rejoin in 30 seconds\n");
+		Msg("[autorestart] last player left, restarting if they don't rejoin in %d seconds\n", grace);
 	}
 }
 
