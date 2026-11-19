@@ -15,7 +15,9 @@ Every 10 seconds the plugin checks whether a restart is warranted:
 When a restart is warranted:
 
 - If there are **no players**, it runs `quit` after `autorestart_grace`
-  seconds.
+  seconds. A player is any slot with a net channel (`GetPlayerNetInfo`), so
+  clients that are still connecting count, and bots don't, unless
+  `sv_stressbots` gives them one.
 - If a player disconnects after the restart comes due, they have
   `autorestart_grace` seconds to rejoin before the restart goes through.
 - While the server **hibernates** (`sv_hibernate_when_empty`), `GameFrame`
